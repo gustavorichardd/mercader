@@ -5,35 +5,44 @@ const insertValuePrice = require('../services/insertOnDatabase.service')
 
 
 module.exports = {
-   async updateBistek() {
+   async updateFortAtacadista() {
 
-      request('https://www.bistek.com.br/', function (err, res, body) {
+      request('https://www.deliveryfort.com.br/', function (err, res, body) {
          if (err) {
             console.log(err, "error occured while hitting URL");
          } else {
             let $ = cheerio.load(body);
             let validPages = []
-            $('ul.navigation__inner-list').each(function (index) {
-               const page = $(this).find('a.navigation__inner-link').attr('href');
-               if (page !== '#') {
-                  validPages.push(`${page}?product_list_limit=all`)
+            // $('body > header > div.header__menu--content > div > div > nav > ul').each(function (index) {
+            $('div.header-main-menu-drop-block--split').each(function (index) {
+               const page = $(this).find('a').attr('href');
+
+               if (page !== undefined) {
+                  validPages.push(`https://www.deliveryfort.com.br${page}`)
                }
+
 
             })
             let index = 0
+            validPages.push('https://www.deliveryfort.com.br/ofertas')
             const pages = [...new Set(validPages)]
 
+
             while (index < pages.length) {
+               console.log(pages[index])
                request(pages[index], function (err, res, body) {
+
                   if (err) {
                      console.log(err, "error occured while hitting URL for specific page: ", pages[index]);
                   } else {
                      let $ = cheerio.load(body);
+                     $('.n32colunas').each(async function () {
+                        console.log('asd')
 
-                     $('div.product-item-info').each(async function () {
-                        const image = $(this).find('a > span > span > img').attr('src');
-                        const name = $(this).find('div.product-item-details > strong > a').text();
-                        const price = $(this).find('div.product-item-details > div.price-box > span > span > .price').text();
+                        const image = $(this).find('div.shelf-item__image > a > img').attr('src');
+                        const name = $(this).find('.shelf-item__info > h3 > a').attr('title');
+                        const price = $(this).find('.shelf-item__info > div > div.shelf-item__price > div > span').text();
+
                         const item = {
                            image,
                            name: name.trim(),
@@ -42,15 +51,15 @@ module.exports = {
 
                         if (price === '') {
                            const finalPrice = $(this).find('span[data-price-type="finalPrice"]').text();
-                           const betterPrice = $(this).find('.clube-bistek > .price').text();
+                           const priceClub = $(this).find('.clube-bistek > .price').text();
                            item.price = finalPrice
-                           item.betterPrice = betterPrice
+                           item.priceClub = priceClub
                         }
 
-                        item.marketId = 1
+                        item.marketId = 2
 
 
-
+                        // console.log(item)
                         await insertValuePrice(item)
                      });
                   }
